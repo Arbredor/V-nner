@@ -2,8 +2,9 @@
 README_Vanner.txt for Vänner iPhone app
 Date:  Monday, 28 April 2014
 
-
-The Vänner iPhone app addresses the following code challenge on a limited time budget.  The initial commit will be officially evaluated.  Any changes after that will be educational but irrelevant to the evaluation.
+Edited:  Tuesday, 6 May 2014
++ Fixed bug tracking issue #1 for nested init functions in WVFacebookFriend.m.
+  Updated version/build to 1.01; manually updated visible labels.
 
 
 Challenge:
