@@ -12,15 +12,12 @@
 
 // Initialize a WVFacebookFriend with no provided references
 - (id)init {
-    self = [super init];
-    if(self != nil) {
-        return [self initWithIdNameAndPicture:nil :nil :nil];
-    }
-    return self;
+    return [self initWithIdNameAndPicture:nil :nil :nil];  // part of bug fix for issue #1 (move [super init])
 }
 
 // Initialize a WVFacebookFriend with the provided ID, name, and picture URL string references
 - (id)initWithIdNameAndPicture:(NSString *)uid :(NSString *)uname :(NSString *)urlString {
+    self = [super init];  // part of bug fix for issue #1 (move [super init] from init())
     if(self != nil) {
         _fbid = uid;
         _name = uname;

@@ -44,10 +44,10 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ncf-Wh-qYo">
-                                <rect key="frame" x="20" y="548" width="55" height="12"/>
+                                <rect key="frame" x="20" y="548" width="61" height="12"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <string key="text">Vänner v1.0
-</string>
+                                <string key="text">Vänner v1.01
+1</string>
                                 <fontDescription key="fontDescription" type="boldSystem" pointSize="10"/>
                                 <color key="textColor" red="0.94117653369999998" green="0.75294125079999996" blue="0.0" alpha="1" colorSpace="deviceRGB"/>
                                 <nil key="highlightedColor"/>
@@ -163,9 +163,9 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="rJb-qA-tk5">
-                                <rect key="frame" x="20" y="548" width="55" height="12"/>
+                                <rect key="frame" x="20" y="548" width="61" height="12"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <string key="text">Vänner v1.0
+                                <string key="text">Vänner v1.01
 </string>
                                 <fontDescription key="fontDescription" type="boldSystem" pointSize="10"/>
                                 <color key="textColor" red="0.94117653369999998" green="0.75294125079999996" blue="0.0" alpha="1" colorSpace="deviceRGB"/>
