@@ -26,7 +26,7 @@
     // Start monitoring network accessibility and set up properties.
     [[AFNetworkReachabilityManager sharedManager] startMonitoring];
     [self initInstanceRefs];
-
+    
     return YES;
 }
 
@@ -50,10 +50,11 @@
         _fbDataMgr = [[WVFacebookDataManager alloc] init];
         // If we didn't get one for whatever reason, throw an alert if possible and exit
         if(_fbDataMgr == nil) {
+            __weak __typeof(self) weakSelf = self;  // weak attribute fix for issue #3
             // If we are this far already, the alerts manager should be non-nil.
             [self.alertsMgr genericAlert:@"Error" :@"Could not create a manager object for the Facebook data.  If this message appears multiple times, please restart the app."
                                         :^(NSInteger cancelIndex, NSInteger buttonIndex) {
-                                            [self createFacebookDataManager];
+                                            [weakSelf createFacebookDataManager];
                                         }];
         }
     }
@@ -63,7 +64,7 @@
 - (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex {
     [self createAlertsManager];
 }
-    
+
 // Create a new WVAlertsManager or alert on error.
 // With no alert manager in place, when the UIAlertView is dismissed, this object's
 // UIAlertView delegate function will call this function again.
@@ -108,11 +109,11 @@
         if([_lastPresentedVC isMemberOfClass:[WVFriendsListViewController class]]) {
             // If we want to get new tokens every time, just segue to the login screen, with this:
             [(WVFriendsListViewController *)_lastPresentedVC manuallyPerformSegueToLogin:YES];
-
+            
             // -- We can do the following instead of going back through the login screen,
             //    although it isn't as obvious that we've reloaded the data (as requested
             //    for the exercise).
-
+            
             // ONLY for testing error handling with a rejected auth_token
             //            self.fbDataMgr.authToken = @"badtoken";
             
@@ -141,6 +142,6 @@
  // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
  }
  
-*/
+ */
 
 @end
