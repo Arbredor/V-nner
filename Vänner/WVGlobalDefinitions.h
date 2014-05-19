@@ -87,6 +87,7 @@ static NSString * const segueToLogin = @"WVListLogoutSegue";
 
 // Cell ID used for the table's Cell Reuse ID
 static NSString * const WVTableViewCellIdentifier = @"WVTableViewCell";
+static NSInteger  const WVNumberCellPrototypes = 8;  // issue #5 - using 8 prototypes to increase the reusable table view cell queue
 
 // String to match within cookie domain - used for removing cookies to reauth Facebook
 static NSString * const WVconst_cookieDomainFacebook = @"facebook.com";
