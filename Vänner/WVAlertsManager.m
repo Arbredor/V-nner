@@ -17,6 +17,7 @@
     if(self != nil) {
         _alertLookup = [NSMutableDictionary dictionaryWithCapacity:10];
         _alertID_queue = dispatch_queue_create("com.spd.wvAlertIDqueue", NULL);
+        // implicit retain of self okay here - block scope ends here and is destroyed
         dispatch_sync(_alertID_queue, ^() {
             _nextAlertID = 1;
         });
@@ -26,6 +27,7 @@
 
 - (NSInteger)createAlertID {
     __block NSInteger nid;
+    // capture of self is okay here - block scope ends here and is destroyed
     dispatch_sync(self.alertID_queue, ^() {
         // synchronously post-increment the ID counter
         nid = self.nextAlertID++;
