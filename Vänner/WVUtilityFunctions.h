@@ -15,4 +15,10 @@
  */
 + (BOOL)stringHasSubstring:(NSString *)mainString :(NSString *)subString;
 
+/* getVersionLabel
+ Returns:  NSString object ref with app version string.  Numbers have X.Y placeholders
+ if the bundle version cannot be retrieved from the main bundle.
+ */
++ (NSString *)getVersionLabel;
+
 @end
