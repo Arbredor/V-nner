@@ -3,17 +3,16 @@ README_Vanner.txt for Vänner iPhone app
 Date:  Monday, 28 April 2014
 
 Edited:  Monday, 19 May 2014
-+ Addressed enhancement issue #2:  Implement automatically updating version labels.
-+ Fixed bug issue #3:  Blocks with self should use weak refs (when retain cycles can occur).
-+ Fixed bug issue #4:  Invisibly re-request interrupted asynchronous image loads.
-+ Fixed bug issue #5:  AFNetworking and UIImageView async image loading race condition when scrolling quickly.
-  Note:  Issue #5 was addressed by increasing the size of the table cell prototype queue,
-         from recommendations in AFNetworking forums.  If it doesn't completely fix the
-         problem, then the pictures may have to be handled separately, not with the AFNetworking
-         UIImageView convenience function.
+• Addressed enhancement issue #2:  Implement automatically updating version labels.
+• Fixed bug issue #3:  Blocks with self should use weak refs (when retain cycles can occur).
+• Fixed bug issue #4:  Invisibly re-request interrupted asynchronous image loads.
+• Fixed bug issue #5:  AFNetworking and UIImageView async image loading race condition when scrolling quickly.
+
+Note:  Issue #5 was addressed by increasing the size of the table cell prototype queue, from recommendations in AFNetworking forums.  If it doesn't completely fix the problem, then the pictures may have to be handled separately, not with the AFNetworking UIImageView convenience function.
+
 
 Edited:  Tuesday, 6 May 2014
-+ Fixed bug tracking issue #1 for nested init functions in WVFacebookFriend.m.
+• Fixed bug tracking issue #1 for nested init functions in WVFacebookFriend.m.
   Updated version/build to 1.01; manually updated visible labels.
 
 
