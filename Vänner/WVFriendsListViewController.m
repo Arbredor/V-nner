@@ -49,13 +49,17 @@
     });
     
     // Register reusable cells for main table view
-    // -- probably no longer required with IB prototypes
-    [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:WVTableViewCellIdentifier];
+    // -- no longer required with IB prototypes handled automatically
+    //    [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:WVTableViewCellIdentifier];
     
     // Register reusable cells for search bar's table view (required)
     UITableView *sctv = [self.searchCtl searchResultsTableView];
     if(sctv != nil) {
-        [sctv registerClass:[UITableViewCell class] forCellReuseIdentifier:WVTableViewCellIdentifier];
+        // Prototypes changed with fix for issue #5
+        //        [sctv registerClass:[UITableViewCell class] forCellReuseIdentifier:WVTableViewCellIdentifier];
+        for(NSInteger i = 0; i < WVNumberCellPrototypes; i++) {
+            [sctv registerClass:[UITableViewCell class] forCellReuseIdentifier:[self tableViewCellIdentifierForRow:i]];
+        }
         sctv.allowsSelection = NO;
     }
 }
