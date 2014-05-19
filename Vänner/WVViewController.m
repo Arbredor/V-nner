@@ -47,6 +47,9 @@
     [super viewDidLoad];
 	// Do any additional setup after loading the view, typically from a nib.
     
+    // Reset the version label - addresses enhancement issue #2
+    [self.versionLabel setText:[WVUtilityFunctions getVersionLabel]];
+    
     self.authTokenString = nil;
     self.resubmitCount = 0;
 }
@@ -74,13 +77,14 @@
 // The alert will call this function again when it is dismissed.
 - (void)initiateOpeningRequest {
     if(![AFNetworkReachabilityManager sharedManager].reachable) {
+        __weak __typeof(self) weakSelf = self;  // fix for issue #3
         [self.alertsMgr genericCustomCancelAlert:@"Network error"
                                                 :@"Please check your connection to WiFi or enable cellular data, then press Retry to continue."
                                                 :@"Retry"
                                                 :^(NSInteger cancelIndex, NSInteger buttonIndex) {
-                                                    [self initiateOpeningRequest];
+                                                    [weakSelf initiateOpeningRequest];
                                                 }];
-         return;
+        return;
     }
     
     NSURL *loginURL = [NSURL URLWithString:[self createLoginURL:self.shouldReauth]];
@@ -97,7 +101,7 @@
 
 // Provide WVFacebookDataManager with the authentication token and clear this instance's copy.
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-//    WVFriendsListViewController *dest = [segue destinationViewController];
+    //    WVFriendsListViewController *dest = [segue destinationViewController];
     WVFacebookDataManager *dataMgr = [(WVAppDelegate *)[[UIApplication sharedApplication] delegate] fbDataMgr];
     dataMgr.authToken = self.authTokenString;
     self.authTokenString = nil;  // clean up to reduce exposure
@@ -113,20 +117,21 @@
 // Allow the user to choose to follow or to reject a link that will
 // leave the log in flow and open an external browser.
 - (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
-
-//    NSLog(@"Intercepted web view request %@", request);
+    
+    //    NSLog(@"Intercepted web view request %@", request);
     __block NSURL *requestURL = [request URL];
     if([self allowURLRequest:request]) {
         if([self doesURLRequestSuccessPath:requestURL]) {
-//            NSLog(@"Log in was successful.\n");
+            //            NSLog(@"Log in was successful.\n");
+            __weak __typeof(self) weakSelf = self;  // fix for issue #3 - being conservative with async dispatch
             if([self getAuthTokenFromSuccessfulRequestURL:requestURL]) {
-                dispatch_async(dispatch_get_main_queue(), ^(){ [self segueWithValidAuthTokens]; });
+                dispatch_async(dispatch_get_main_queue(), ^(){ [weakSelf segueWithValidAuthTokens]; });
             } else {
                 [self.alertsMgr genericCustomCancelAlert:@"Log in error"
                                                         :@"Could not retrieve authentication tokens with the successful log in.  Please press Retry to restart the log in process."
                                                         :@"Retry"
                                                         :^(NSInteger cancelButton, NSInteger buttonIndex) {
-                                                            [self initiateOpeningRequest];
+                                                            [weakSelf initiateOpeningRequest];
                                                         }];
             }
         }
@@ -214,7 +219,7 @@
 - (BOOL)doesURLRequestSuccessPath:(NSURL *)url {
     NSString *path = [url path];
     if([self doesURLRequestExpectedDomain:url]) {
-//        NSLog(@"test for success with path %@ and expected %@", path, WVconst_expectedSuccessPath);
+        //        NSLog(@"test for success with path %@ and expected %@", path, WVconst_expectedSuccessPath);
         return ([path isEqualToString:WVconst_expectedSuccessPath]);
     }
     return NO;
@@ -261,11 +266,12 @@
         }
         
         if(self.resubmitCount > WVconst_maxResubmissions) {
+            __weak __typeof(self) weakSelf = self;  // fix for issue #3 - avoid self retain cycles
             [self.alertsMgr genericCustomCancelAlert:@"Web page loading error"
                                                     :@"Failed to load Facebook login form data.  Please check your WiFi connection or enable cellular data, then press Retry."
                                                     :@"Retry"
                                                     :^(NSInteger cancelButton, NSInteger buttonIndex) {
-                                                        [self initiateOpeningRequest];
+                                                        [weakSelf initiateOpeningRequest];
                                                     }];
             if(VC_LogDebugStatements) {
                 NSLog(@"Web view error is %@\n", error);
@@ -285,8 +291,8 @@
 //            Since Facebook requires at least one more acknowledgment from the user
 //            to approve access for a new app, this app is using the standard Facebook
 //            oauth flow in a visible UIWebView.
-/*
 
+/*
 - (BOOL)fillInForm {
     //    if(submittedOnce) {
     //        return NO;
@@ -376,6 +382,6 @@
     // sign in is complete, perform segue to friend list view controller
     // [self performSegueWithIdentifier:segueToFriendsList sender:self];
 }
- */
+*/
 
 @end
