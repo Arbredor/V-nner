@@ -40,6 +40,7 @@
 // Safely initialize relevant Facebook friend data structures with reasonable
 // starting capacities.  Indicate dirty data.
 - (void)initStructures {
+    // implicit capture of self with ivars is okay here; block scope ends here and is destroyed.
     dispatch_sync(_dataAccessQueue, ^() {
         _friendDataDict = [NSMutableDictionary dictionaryWithCapacity:100];
         _dataUpdatedSincePull = YES;
@@ -62,11 +63,13 @@
 // Graph API request chain.  Error alert will call this again on dismissal.
 - (void)checkNetworkAndStartGraphChain:(WVFriendsListViewController *)friendsLVCtl {
     if(![AFNetworkReachabilityManager sharedManager].reachable) {
+        __weak __typeof(self) weakSelf = self;  // fix for issue #3
         [self.alertsMgr genericCustomCancelAlert:@"Network error"
                                                 :@"Please check your connection to WiFi or enable cellular data, then press Retry to continue."
                                                 :@"Retry"
                                                 :^(NSInteger cancelIndex, NSInteger buttonIndex) {
-                                                    [self checkNetworkAndStartGraphChain:friendsLVCtl];
+                                                    __strong __typeof(weakSelf) strongSelf = weakSelf;
+                                                    [strongSelf checkNetworkAndStartGraphChain:friendsLVCtl];
                                                 }];
     } else {
         [self initiateGraphAPIRequest:nil :friendsLVCtl];
@@ -80,6 +83,7 @@
 - (NSInteger)numberOfDataRows:(BOOL)forSearchTable {
     NSInteger tableSize;
     NSInteger *tableSizePtr = &tableSize;
+    // explicit capture of self is okay here; block scope ends here and will be destroyed
     dispatch_sync(self.dataAccessQueue, ^() {
         if((forSearchTable) && (self.filteredDataSourceIndices != nil)) {
             *tableSizePtr = [self.filteredDataSourceIndices count];
@@ -93,7 +97,8 @@
 // Create a copy of the friend data to decouple it from the synchronized data structures.
 // We will reload the table as necessary after changes have been completed.
 - (WVFacebookFriend *)copyOfFriendAtRow:(BOOL)forSearchTable :(NSInteger)row {
-    __block WVFacebookFriend *newFBFriend;
+    __block WVFacebookFriend *newFBFriend = nil;
+    // explicit capture of self is okay here; block scope ends here and will be destroyed
     dispatch_sync(self.dataAccessQueue, ^() {
         if((forSearchTable) && (self.filteredDataSourceIndices != nil)) {
             if((row >= 0) && (row < [self.filteredDataSourceIndices count])) {
@@ -103,9 +108,9 @@
                 newFBFriend = [WVFacebookFriend newCopyOfFriend:fbfriend];
             }
         } else if((row >= 0) && (row < [self.dataSourceIDs count])) {
-                NSString *lookupID = self.dataSourceIDs[row];
-                WVFacebookFriend *fbfriend = self.friendDataDict[lookupID];
-                newFBFriend = [WVFacebookFriend newCopyOfFriend:fbfriend];
+            NSString *lookupID = self.dataSourceIDs[row];
+            WVFacebookFriend *fbfriend = self.friendDataDict[lookupID];
+            newFBFriend = [WVFacebookFriend newCopyOfFriend:fbfriend];
         }
     });
     return newFBFriend;
@@ -164,22 +169,27 @@
 // retrieved index array, or start from the full dataSourceIDs
 // array if no cached search results exist.
 - (void)searchBarTextChanged:(NSString *)searchText {
+    __weak __typeof(self) weakSelf = self;     // fix for issue #3 - doing weak/strong dance for async safety
     dispatch_async(self.dataAccessQueue, ^() {
+        __strong __typeof(weakSelf) strongSelf = weakSelf;  // fix for issue #3 - weak/strong dance for multiple uses of self
+        if(strongSelf == nil) {
+            return;  // little use in proceeding if strongSelf is nil
+        }
         if([searchText isEqualToString:@""]) {
-            self.filteredDataSourceIndices = nil;   // start with full dataSourceIDs
+            strongSelf.filteredDataSourceIndices = nil;   // start with full dataSourceIDs
             return;
         }
-    
+        
         NSString *lcFS = [searchText lowercaseString];
-        if(self.searchesAreInvalid) {               // clean out dictionary if data changed
-            self.nameSearches = [NSMutableDictionary dictionaryWithCapacity:20];
-            self.searchesAreInvalid = NO;
+        if(strongSelf.searchesAreInvalid) {               // clean out dictionary if data changed
+            strongSelf.nameSearches = [NSMutableDictionary dictionaryWithCapacity:20];
+            strongSelf.searchesAreInvalid = NO;
         }
-
+        
         NSArray *cachedSearch = nil;
         NSMutableString *cacheTestString = [NSMutableString stringWithString:lcFS];
         while([cacheTestString length] > 0) {       // strip away characters until none are left
-            NSArray *thisSearchLookup = self.nameSearches[cacheTestString];
+            NSArray *thisSearchLookup = strongSelf.nameSearches[cacheTestString];
             if(thisSearchLookup != nil) {           // on a match, we have cached search results
                 cachedSearch = thisSearchLookup;
                 break;
@@ -193,21 +203,22 @@
         NSArray *newFilter = nil;
         if(cachedSearch != nil) {                           // found a cached search
             if([lcFS isEqualToString:cacheTestString]) {    // use cache if exact match
-                self.filteredDataSourceIndices = cachedSearch;
+                strongSelf.filteredDataSourceIndices = cachedSearch;
                 return;
             }                                               // get new filter starting with cached search
-            newFilter = [self filterNameArrayBySubstring:cachedSearch :lcFS];
+            newFilter = [strongSelf filterNameArrayBySubstring:cachedSearch :lcFS];
         } else {                                            // no match, filter starting with full ID list
-            newFilter = [self filterNameArrayBySubstring:nil :lcFS];
+            newFilter = [strongSelf filterNameArrayBySubstring:nil :lcFS];
         }
-        self.nameSearches[lcFS] = newFilter;                // cache new filter
-        self.filteredDataSourceIndices = newFilter;         // set filter property to new filter
+        strongSelf.nameSearches[lcFS] = newFilter;                // cache new filter
+        strongSelf.filteredDataSourceIndices = newFilter;         // set filter property to new filter
     });
 }
 
 // Safely update all data source lists from latest Facebook data fetch.
 // Update the table views.
 - (void)updateDataSourceLists:(WVFriendsListViewController *)friendsListVC {
+    // explicit capture of self is okay here; block scope ends here and will be destroyed
     dispatch_sync(self.dataAccessQueue, ^() {
         if(self.dataUpdatedSincePull) {
             self.dataSourceIDs = [self sortIDsByNames:[self.friendDataDict allKeys]];
@@ -225,9 +236,11 @@
 // Sort IDs in an array (usually the dataSourceIDs array) based on the names of the
 // WVFacebookFriend objects stored in self.friendDataDict[id1] and self.friendDataDict[id2].
 - (NSArray *)sortIDsByNames:(NSArray *)idList {
+    __weak __typeof(self) weakSelf = self; // fix for issue #3 - self holds idList; in case block is retained...
     NSArray *newArray = [idList sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
-        return [(NSString *)[[(WVFacebookFriend *)(self.friendDataDict[obj1]) name] lowercaseString]
-                compare:(NSString *)[[(WVFacebookFriend *)(self.friendDataDict[obj2]) name] lowercaseString]];
+        __strong __typeof(weakSelf) strongSelf = weakSelf;
+        return [(NSString *)[[(WVFacebookFriend *)(strongSelf.friendDataDict[obj1]) name] lowercaseString]
+                compare:(NSString *)[[(WVFacebookFriend *)(strongSelf.friendDataDict[obj2]) name] lowercaseString]];
     }];
     return newArray;
 }
@@ -236,9 +249,14 @@
 // all data source lists.  This is used for a final update after the last paged
 // Facebook Graph API response.
 - (void)waitForGraphRequestsAndUpdateLists:(WVFriendsListViewController *)friendsListVC {
+    __weak __typeof(self) weakSelf = self;     // fix for issue #3 - doing weak/strong dance for async safety with retain cycles
     dispatch_async(dispatch_get_main_queue(), ^() {
-        dispatch_group_wait(self.dataAccessQueueGroup, DISPATCH_TIME_FOREVER);
-        [self updateDataSourceLists:friendsListVC];
+        __strong __typeof(weakSelf) strongSelf = weakSelf;  // fix for issue #3 - weak/strong dance
+        if(strongSelf == nil) {
+            return;  // extremely unlikely that the object will go away
+        }
+        dispatch_group_wait(strongSelf.dataAccessQueueGroup, DISPATCH_TIME_FOREVER);
+        [strongSelf updateDataSourceLists:friendsListVC];
     });
 }
 
@@ -259,42 +277,45 @@
     AFHTTPRequestOperation *requestOp = [[AFHTTPRequestOperation alloc] initWithRequest:request];
     requestOp.responseSerializer = [AFJSONResponseSerializer serializer];
     
+    __weak __typeof(self) weakSelf = self;  // fix for issue #3 - weak/strong dance for self retain cycles
     [requestOp setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
-//        NSLog(@"Successfully retrieved the following from the Graph JSON %@", responseObject);
-        BOOL fillResult = [self fillDictsFromResponseDict:responseObject :friendsListVC];
+        //        NSLog(@"Successfully retrieved the following from the Graph JSON %@", responseObject);
+        __strong __typeof(weakSelf) strongSelf = weakSelf;
+        BOOL fillResult = [strongSelf fillDictsFromResponseDict:responseObject :friendsListVC];
         if(fillResult) { // update lists and chain next request from this response
-            [self updateDataSourceLists:friendsListVC];
-            [self initiateGraphAPIRequest:responseObject :friendsListVC];
+            [strongSelf updateDataSourceLists:friendsListVC];
+            [strongSelf initiateGraphAPIRequest:responseObject :friendsListVC];
         } else {         // empty the queue, update lists, skip any remaining requests
-            [self waitForGraphRequestsAndUpdateLists:friendsListVC];
+            [strongSelf waitForGraphRequestsAndUpdateLists:friendsListVC];
         }
     } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        __strong __typeof(weakSelf) strongSelf = weakSelf;
         // Look first for data request rejection - probably an authentication error
         // If so, segue back to log in but don't flush cookies
         if([WVUtilityFunctions stringHasSubstring:error.localizedDescription :@"Request failed"]) {
-            [self.alertsMgr genericCustomCancelAlert:@"Facebook rejected the data request"
-                                                    :@"Your access rights may have expired or been revoked.  You should log in again."
-                                                    :@"Refresh Tokens"
-                                                    :^(NSInteger cancelIndex, NSInteger buttonIndex) {
-                                                        friendsListVC.resumingNotRelogging = YES;
-                                                        [friendsListVC performSegueWithIdentifier:@"WVListLogoutSegue"
-                                                                                           sender:self];
-                                                    }];
-        } else {  // Otherwise, it's likely a network error, but provide choice to re-authenticate.
-                  // If choosing to log in again, don't flush cookies; otherwise, retry Graph API chain
-            [self.alertsMgr genericCustomOkCancelAlert:@"Network error"
-                                                      :@"Please check your network connection and press Retry to attempt to reload the data.  If the error continues with a valid connection, please try to log in again."
-                                                      :@"Log In"  // OK
-                                                      :@"Retry"   // Cancel
-                                                      :^(NSInteger cancelIndex, NSInteger buttonIndex) {
-                                                          if(buttonIndex != cancelIndex) {
+            [strongSelf.alertsMgr genericCustomCancelAlert:@"Facebook rejected the data request"
+                                                          :@"Your access rights may have expired or been revoked.  You should log in again."
+                                                          :@"Refresh Tokens"
+                                                          :^(NSInteger cancelIndex, NSInteger buttonIndex) {
                                                               friendsListVC.resumingNotRelogging = YES;
                                                               [friendsListVC performSegueWithIdentifier:@"WVListLogoutSegue"
-                                                                                                 sender:self];
-                                                          } else {
-                                                              [self retryAll:friendsListVC];
-                                                          }
-                                                      }];
+                                                                                                 sender:strongSelf];
+                                                          }];
+        } else {  // Otherwise, it's likely a network error, but provide choice to re-authenticate.
+            // If choosing to log in again, don't flush cookies; otherwise, retry Graph API chain
+            [strongSelf.alertsMgr genericCustomOkCancelAlert:@"Network error"
+                                                            :@"Please check your network connection and press Retry to attempt to reload the data.  If the error continues with a valid connection, please try to log in again."
+                                                            :@"Log In"  // OK
+                                                            :@"Retry"   // Cancel
+                                                            :^(NSInteger cancelIndex, NSInteger buttonIndex) {
+                                                                if(buttonIndex != cancelIndex) {
+                                                                    friendsListVC.resumingNotRelogging = YES;
+                                                                    [friendsListVC performSegueWithIdentifier:@"WVListLogoutSegue"
+                                                                                                       sender:strongSelf];
+                                                                } else {
+                                                                    [strongSelf retryAll:friendsListVC];
+                                                                }
+                                                            }];
         }
         if(VC_LogDebugStatements) {
             NSLog(@"Request in initiateGraphAPIRequest encountered the following error %@", error);
@@ -320,29 +341,35 @@
         }
     }
     if(loginAgain) {
+        // fix for issue #3 - weak/strong dance for self retain cycles
+        __weak __typeof(self) weakSelf = self;
         [self.alertsMgr genericCustomOkCancelAlert:@"Facebook error"
                                                   :@"Facebook returned an authentication exception error.  You should log in again."
                                                   :@"Log in"  // OK
                                                   :@"Retry"   // Cancel
                                                   :^(NSInteger cancelIndex, NSInteger buttonIndex) {
+                                                      __strong __typeof(weakSelf) strongSelf = weakSelf;
                                                       if(buttonIndex != cancelIndex) {
                                                           [friendsListVC performSegueWithIdentifier:@"WVListLogoutSegue"
-                                                                                             sender:self];
+                                                                                             sender:strongSelf];
                                                       } else {
-                                                          [self retryAll:friendsListVC];
+                                                          [strongSelf retryAll:friendsListVC];
                                                       }
                                                   }];
-
+        
     } else {
+        // fix for issue #3 - weak/strong dance for self retain cycles
+        __weak __typeof(self) weakSelf = self;
         [self.alertsMgr genericCustomCancelAlert:@"Facebook error"
                                                 :@"Facebook responded with a data error.  Please press Retry to resend the request.  You may need to wait or log in again."
                                                 :@"Retry"
                                                 :^(NSInteger cancelIndex, NSInteger buttonIndex) {
+                                                    __strong __typeof(weakSelf) strongSelf = weakSelf;
                                                     if(buttonIndex != cancelIndex) {
-                                                        [self retryAll:friendsListVC];
+                                                        [strongSelf retryAll:friendsListVC];
                                                     }
                                                 }];
-
+        
     }
     return YES;
 }
@@ -382,11 +409,13 @@
             if(pictureURLString == nil) {
                 pictureURLString = @"";             // provide empty URL string on error - will skip
             }
+            __weak __typeof(self) weakSelf = self;     // fix for issue #3 - doing weak/strong dance for async safety
             dispatch_group_async(self.dataAccessQueueGroup, self.dataAccessQueue, ^() {
-                self.dataUpdatedSincePull = YES;    // mark tables as dirty, add friend object
-                self.friendDataDict[fbid] = [[WVFacebookFriend alloc] initWithIdNameAndPicture:fbid
-                                                                                              :name
-                                                                                              :pictureURLString];
+                __strong __typeof(weakSelf) strongSelf = weakSelf;  // fix for issue #3 - weak/strong dance
+                strongSelf.dataUpdatedSincePull = YES;    // mark tables as dirty, add friend object
+                strongSelf.friendDataDict[fbid] = [[WVFacebookFriend alloc] initWithIdNameAndPicture:fbid
+                                                                                                    :name
+                                                                                                    :pictureURLString];
             } );
         } else {
             errorOccurred = YES;
@@ -407,7 +436,7 @@
         return NO;
     }
     if([self handleFacebookGraphErrorResponse:responseDict :friendsListVC]) {
-                    // handleFacebookGraphErrorResponse: returns YES if alerting an error
+        // handleFacebookGraphErrorResponse: returns YES if alerting an error
         return NO;  // The function includes an alert dialog.
     }
     
@@ -422,13 +451,15 @@
     
     // Allow a retry or an option to accept the missing data as is.
     if(errorOccurred) {
+        __weak __typeof(self) weakSelf = self;     // fix for issue #3 - weak self for async safety
         [self.alertsMgr genericCustomOkCancelAlert:@"Missing data"
                                                   :@"The app encountered some unexpected errors while processing the Facebook data.  Some photos or full entries may be missing.  Press Retry to reload data or OK to accept missing data."
                                                   :@"Retry"
                                                   :@"OK"
                                                   :^(NSInteger cancelIndex, NSInteger buttonIndex) {
                                                       if(buttonIndex != cancelIndex) {
-                                                          [self retryAll:friendsListVC];
+                                                          __strong __typeof(weakSelf) strongSelf = weakSelf;
+                                                          [strongSelf retryAll:friendsListVC];
                                                       }
                                                   }];
     }
