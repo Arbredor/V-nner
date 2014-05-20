@@ -41,13 +41,6 @@
     //    [self.tableView setDataSource:self];
     //    [self.tableView setDelegate:self];
     
-    // Create sync dispatch queue for the error flag.  Clear the flag.
-    self.error_flag_queue = dispatch_queue_create("com.spd.error_flag_queue", NULL);
-    // explicit capture of self is okay in this block; block scope ends here and is destroyed
-    dispatch_sync(self.error_flag_queue, ^() {
-        self.imageAlertDisplayed = NO;
-    });
-    
     // Register reusable cells for main table view
     // -- no longer required with IB prototypes handled automatically
     //    [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:WVTableViewCellIdentifier];
@@ -109,6 +102,24 @@
 }
 
 
+// Ask the view which requested a friend's image to reload the row data if the row index is visible.
+// Assumes the row index still has the same friend in it.  The WVFacebookDataManager will force
+// a UITableView reload if the rows have changed.
+- (void)pictureCachedForRow:(UITableView *)view :(NSInteger)row {
+    if(view == nil) {
+        return;  // Very unlikely.  We have two UITableViews; without a ref, we don't know which one to update.
+    }
+    NSArray *visibleIndexPaths = [view indexPathsForVisibleRows];
+    if(visibleIndexPaths != nil) {
+        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:row inSection:0];
+        if([visibleIndexPaths containsObject:indexPath]) {
+            [view reloadRowsAtIndexPaths:[NSArray arrayWithObject:indexPath]
+                        withRowAnimation:UITableViewRowAnimationAutomatic];
+        }
+    }
+}
+
+
 // Forward the data source request to the Facebook data manager
 // and return the appropriate number of rows in either the main
 // or the search UITableView.
@@ -117,57 +128,6 @@
 }
 
 
-// NOTE that the AFNetworking UIImageView extension caches the requests and the resulting images.
-// Once they're loaded, the API doesn't re-request the images unless the cache has flushed them for
-// memory management reasons.
-- (void)setTableCellImageViewForFriendWithRequest:(UITableViewCell *)tableCell :(NSURLRequest *)imageRequest {
-    __weak UITableViewCell *cell = tableCell;
-    __weak __typeof(self) weakSelf = self;  // fix for issue #3 - possible self retain cycles
-    [tableCell.imageView setImageWithURLRequest:imageRequest
-                               placeholderImage:nil
-                                        success:^(NSURLRequest *request, NSHTTPURLResponse *response, UIImage *image) {
-                                            UITableViewCell *strongCell = cell;  // create strong reference within scope for multiple uses
-                                            [strongCell.imageView setImage:image];
-                                            [strongCell.imageView sizeToFit];
-                                            [strongCell setNeedsLayout];
-                                            //                                            NSLog(@"Image fetch request %@ succeeded.\n", request);
-                                        }
-                                        failure:^(NSURLRequest *request, NSHTTPURLResponse *response, NSError *error) {
-                                            // display an alert for image failure, but only display one at a time
-                                            // avoid possibly nested dispatches to the error flag by using a
-                                            //   decoupled copy
-                                            __block BOOL alertDisplayedDecoupled;
-                                            __strong __typeof(weakSelf) strongSelf = weakSelf; // fix for issue #3
-                                            if(error.code == -999) {  // re-request interrupted async loads - fix for issue #4
-                                                // request again and return immediately (don't recurse rest of function)
-                                                dispatch_async(dispatch_get_main_queue(), ^() { [strongSelf setTableCellImageViewForFriendWithRequest:cell :request]; });
-                                                //                                                NSLog(@"Image fetch request %@ was interrupted.\n", request);
-                                                return;
-                                            }
-                                            dispatch_sync(strongSelf.error_flag_queue, ^() {
-                                                alertDisplayedDecoupled = strongSelf.imageAlertDisplayed;
-                                            });
-                                            if(!alertDisplayedDecoupled) {
-                                                dispatch_sync(strongSelf.error_flag_queue, ^() {
-                                                    strongSelf.imageAlertDisplayed = YES;
-                                                });
-                                                [strongSelf.alertsMgr genericCustomOkCancelAlert:@"Image load error"
-                                                                                                :@"At least one image failed to load.  Press Retry to refresh the data or OK to accept missing images."
-                                                                                                :@"Retry"
-                                                                                                :@"OK"
-                                                                                                :^(NSInteger cancelIndex, NSInteger buttonIndex) {
-                                                                                                    dispatch_sync(strongSelf.error_flag_queue, ^() {
-                                                                                                        strongSelf.imageAlertDisplayed = NO;
-                                                                                                    });
-                                                                                                    if(buttonIndex != cancelIndex) {
-                                                                                                        [strongSelf retryAll];
-                                                                                                    }
-                                                                                                }];
-                                            }
-                                        }
-     ];
-    
-}
 
 // Added more cell prototypes in IB to increase the reusable table view cell queue.
 // Now, we need to choose the cell ID, preferably row % (number of cell IDs) for even distribution.
@@ -189,11 +149,8 @@
     BOOL fillCell = (fbfriend != nil);
     if(fillCell) {
         if(tableCell.imageView != nil) {
-            NSString *pictureURLString = [fbfriend pictureURLString];
-            if(![pictureURLString isEqualToString:@""]) {
-                NSURL *pictureURL = [NSURL URLWithString:pictureURLString];
-                [self setTableCellImageViewForFriendWithRequest:tableCell :[NSURLRequest requestWithURL:pictureURL]];
-            }
+            [tableCell.imageView setImage:[fbfriend picture:self :tableView :indexPath.row]];
+            [tableCell.imageView setNeedsLayout];
         }
         [tableCell.textLabel setText:[fbfriend name]];
     }

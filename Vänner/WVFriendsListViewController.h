@@ -27,13 +27,6 @@
 @property (strong, nonatomic) WVFacebookDataManager       *fbDataMgr;
 @property (strong, nonatomic) WVAlertsManager             *alertsMgr;
 
-// Keep a synchronized error flag for indicating that an alert
-// has already been displayed for an image loading error.
-// Only display a new image loading alert if one is not
-// already displayed.  Clear the flag when the alert is dismissed.
-@property (strong, nonatomic) dispatch_queue_t error_flag_queue;
-@property (nonatomic) BOOL imageAlertDisplayed;
-
 // Keep a flag indicating if we should or should not delete
 // Facebook cookies when returning to the log in view controller.
 @property (nonatomic) BOOL resumingNotRelogging;
@@ -103,6 +96,7 @@
  */
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath;
 
+
 /* tableViewCellIdentifierForRow: does the following:
  (1) Returns a new NSString with the base cell prototype ID appended
  with (row % WVNumberCellPrototypes), effectively increasing
@@ -114,16 +108,6 @@
  next forced update of the row's display data.
  */
 - (NSString *)tableViewCellIdentifierForRow:(NSInteger)row;
-
-/* setTableCellImageViewForFriendWithRequest: does the following:
- (1) Fills the cell's imageView with a call to AFNetworking's extension setImageWithURLRequest:.
- (2) The image loading success block sets the image in the cell's imageView and
- requests a layout update.  The failure block checks for error code -999
- (interrupted async load) and will re-request the image in that case.  Otherwise,
- it displays an alert if one is not already visible.  User may accept the missing
- data or attempt to refresh all data.
- */
-- (void)setTableCellImageViewForFriendWithRequest:(UITableViewCell *)tableCell :(NSURLRequest *)imageRequest;
 
 
 /* manuallyPerformSegueToLogin: does the following:
@@ -148,5 +132,18 @@
  all Facebook cookies before the segue to the log in view controller.
  */
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender;
+
+
+/* pictureCachedForRow: does the following:
+ Asks the non-nil view (which probably requested the friend's image)
+ to reload the associated row data if the row is visible.
+ This function should be called on successful completion of a
+ friend's image fetch.  It shouldn't be needed if the image was
+ already cached.
+ Assumes the row index still has the same friend in it.  The
+ WVFacebookDataManager will force a UITableView reload if the rows
+ have changed.
+ */
+- (void)pictureCachedForRow:(UITableView *)view :(NSInteger)row;
 
 @end
