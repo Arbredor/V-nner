@@ -13,8 +13,9 @@
 // Alert ID lookup table and alert ID counter
 @property (strong, nonatomic) NSMutableDictionary *alertLookup;
 @property (nonatomic) NSInteger nextAlertID;
+@property (nonatomic) BOOL imageAlertShown;
 
-// Dispatch queue to protect access to the alert ID counter
+// Dispatch queue to protect access to the alert ID counter and image alert boolean
 @property (strong, nonatomic) dispatch_queue_t alertID_queue;
 
 /*
@@ -73,5 +74,22 @@
  and a block to execute when the view is dismissed.
  */
 - (void)genericCustomOkCancelAlert:(NSString *)title :(NSString *)message :(NSString *)okTitle :(NSString *)cancelTitle :(void (^)(NSInteger cancelIndex, NSInteger buttonIndex))onFinish;
+
+/*
+ imageAlertIfNoneVisible:
+ Checks and sets the imageAlertShown property.  If the property was
+ previously clear, the function calls the genericCustomOKCancelAlert:
+ function with the provided arguments.  NOTE:  The completion function
+ should call [alertsManager imageAlertDismissed] to clear the property.
+ */
+- (void)imageAlertIfNoneVisible:(NSString *)title :(NSString *)message :(NSString *)okTitle :(NSString *)cancelTitle :(void (^)(NSInteger cancelIndex, NSInteger buttonIndex))onFinish;
+
+/*
+ imageAlertDismissed
+ Clears the imageAlertShown property.  Completion (onFinish) blocks provided
+ to imageAlertIfNoneVisible should call this function when the alert is dismissed.
+ */
+- (void)imageAlertDismissed;
+
 
 @end

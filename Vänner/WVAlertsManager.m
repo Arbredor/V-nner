@@ -20,6 +20,7 @@
         // implicit retain of self okay here - block scope ends here and is destroyed
         dispatch_sync(_alertID_queue, ^() {
             _nextAlertID = 1;
+            _imageAlertShown = NO;
         });
     }
     return self;
@@ -96,6 +97,29 @@
     alert.tag = [self createAlertID];
     self.alertLookup[[NSNumber numberWithInteger:alert.tag]] = onFinish;
     [alert show];
+}
+
+// This special function creates and displays a customizable double-button alert with
+// a return block only if the imageAlertShown property is NO.  Updates the property to YES.
+- (void)imageAlertIfNoneVisible:(NSString *)title :(NSString *)message :(NSString *)okTitle :(NSString *)cancelTitle :(void (^)(NSInteger cancelIndex, NSInteger buttonIndex))onFinish {
+    __block BOOL iaShown;
+    // capture of self is okay here - block scope ends here and is destroyed
+    dispatch_sync(self.alertID_queue, ^() {
+        // synchronously post-increment the ID counter
+        iaShown = _imageAlertShown;
+        self.imageAlertShown = YES;
+    });
+    if(!iaShown) {
+        [self genericCustomOkCancelAlert:title :message :okTitle :cancelTitle :onFinish];
+    }
+}
+
+// Clear the imageAlertShown property.  Used in completion blocks when a single-use image alert is dismissed.
+- (void)imageAlertDismissed {
+    // capture of self is okay here - block scope ends here and is destroyed
+    dispatch_sync(self.alertID_queue, ^() {
+        self.imageAlertShown = NO;
+    });
 }
 
 @end
