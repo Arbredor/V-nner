@@ -93,5 +93,9 @@ static NSInteger  const WVNumberCellPrototypes = 8;  // issue #5 - using 8 proto
 static NSString * const WVconst_cookieDomainFacebook = @"facebook.com";
 
 
+// --- Constants used in WVFacebookFriend ---
+
+// Name of file for friend placeholder image
+static NSString * const WVconst_placeholderImageFile = @"placeholder.png";
 
 #endif
