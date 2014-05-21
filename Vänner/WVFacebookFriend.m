@@ -121,7 +121,7 @@
     static UIImage *_placeholderImage = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        _placeholderImage = [UIImage imageWithContentsOfFile:WVconst_placeholderImageFile];
+        _placeholderImage = [UIImage imageNamed:WVconst_placeholderImageFile];
     });
     return _placeholderImage;
 }
