@@ -71,7 +71,7 @@
 		FC2799EA190313FA00ADEA31 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		FC2799EC190313FA00ADEA31 /* Va_nnerTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Va_nnerTests.m; sourceTree = "<group>"; };
 		FC2799F6190569AD00ADEA31 /* WVGlobalDefinitions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WVGlobalDefinitions.h; sourceTree = "<group>"; };
-		FC82B107192BC88800BCC1B0 /* placeholder.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = placeholder.png; sourceTree = "<group>"; };
+		FC82B107192BC88800BCC1B0 /* placeholder.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = placeholder.png; path = "Vänner/placeholder.png"; sourceTree = SOURCE_ROOT; };
 		FC9FF995190862F100202CA7 /* WVFriendsListViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WVFriendsListViewController.h; sourceTree = "<group>"; };
 		FC9FF996190862F100202CA7 /* WVFriendsListViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WVFriendsListViewController.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
