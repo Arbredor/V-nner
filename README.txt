@@ -1,7 +1,13 @@
 
 README_Vanner.txt for Vänner iPhone app
-Date:  Monday, 28 April 2014
 
+-----
+Edited:  Tuesday, 20 May 2014
+• Reopened and fixed bug issue #5:  AFNetworking and UIImageView async image loading race condition when scrolling quickly.
+
+Details:  Increasing the size of the table cell prototype queue did not completely solve the problem.  Unless the queue is very large, fast scrolling still exposes recycled cell references, so asynchronously loading images should not be tied directly to an UIImageView inside a table cell.  With the new fix, image fetching (and caching) has been moved to the WVFacebookFriend objects.  Upon initialization, the WVFacebookFriend uses AFNetworking extensions to load the image to a temporary UIImageView, caching the image in the AFNetworking image cache.  Requests to the WVFacebookFriend object for its picture will return either an image in the cache or a placeholder image while the object tries to fetch (and cache) the image.  If the WVFacebookFriend object needs to fetch the image, it notifies the view controller and the table view upon success that the relevant row should be reloaded if it is visible.
+
+-----
 Edited:  Monday, 19 May 2014
 • Addressed enhancement issue #2:  Implement automatically updating version labels.
 • Fixed bug issue #3:  Blocks with self should use weak refs (when retain cycles can occur).
@@ -10,11 +16,15 @@ Edited:  Monday, 19 May 2014
 
 Note:  Issue #5 was addressed by increasing the size of the table cell prototype queue, from recommendations in AFNetworking forums.  If it doesn't completely fix the problem, then the pictures may have to be handled separately, not with the AFNetworking UIImageView convenience function.
 
-
+-----
 Edited:  Tuesday, 6 May 2014
 • Fixed bug tracking issue #1 for nested init functions in WVFacebookFriend.m.
   Updated version/build to 1.01; manually updated visible labels.
 
+-----
+First commit:  Monday, 28 April 2014
+
+---------------------------------------------
 
 Challenge:
   
