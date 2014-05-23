@@ -2,7 +2,7 @@
 README_Vanner.txt for Vänner iPhone app
 
 Edit details follow the challenge description.
-Last edit:     Wednesday, 21 May 2014
+Last edit:     Friday, 23 May 2014
 First commit:  Monday, 28 April 2014
 
 ---------------------------------------------
@@ -47,6 +47,9 @@ App notes:
 
 Updates:
 -------
+Edited:  Friday, 23 May 2014
+• Updated AFNetworking pod from 2.2.3 to 2.2.4, to take advantage of a recent AFNetworking fix for a race condition in its UIImageView extensions.
+
 Edited:  Wednesday, 21 May 2014
 • Moved update notes to bottom of README file.
 
