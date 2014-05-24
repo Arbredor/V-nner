@@ -29,6 +29,11 @@
         _pictureURLString = urlString;
         _pictureRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
         _tempImageView = nil;
+        _requestTrackingQueue = dispatch_queue_create("com.spd.wvRequestTrackingQueue", NULL);
+        // implicit capture of self is okay here; scope ends here and is destroyed
+        dispatch_sync(_requestTrackingQueue, ^() {
+            _requestInProgress = NO;
+        });
         [self cacheImage:_pictureRequest :nil :nil :0];
     }
     return self;
@@ -39,6 +44,19 @@
     if([[UIImageView sharedImageCache] cachedImageForRequest:request] != nil) {
         return;  // return if the AFNetworking image cache already has an image for this request
     }
+
+    // Don't request again if a request is already in progress.  AFNetworking has been exhibiting race
+    // conditions, so avoid multiple requests for the same photo.
+    __block BOOL requestIsInProgress;
+    // implicit capture of self in this block is okay; scope ends here and is destroyed
+    dispatch_sync(_requestTrackingQueue, ^() {
+        requestIsInProgress = _requestInProgress;
+        _requestInProgress = YES;
+    });
+    if(requestIsInProgress) {
+        return;
+    }
+    
     // Create a temporary UIImageView and use the AFNetworking extensions to get the image (and cache it)
     _tempImageView = [[UIImageView alloc] initWithImage:[WVFacebookFriend placeholderImage]];
     [self requestImageWithAFNetworking:_pictureRequest :receiver :view :forRow];  // row used to determine if table view should reload
@@ -76,8 +94,12 @@
                                            // request view to reload the row data if the row is visible
                                            [strongFLVC pictureCachedForRow:strongView :forRow];
                                        }
-                                       // image should now be cached - remove the saved reference
-                                      [strongSelf setTempImageView:nil];
+                                       // clear the request flag and the ref to the temp image view
+                                       dispatch_sync(strongSelf.requestTrackingQueue, ^() {
+                                           // image should now be cached - remove the saved reference
+                                           [strongSelf setTempImageView:nil];
+                                           [strongSelf setRequestInProgress:NO];
+                                       });
                                    }
                                    failure:^(NSURLRequest *request, NSHTTPURLResponse *response, NSError *error) {
                                        if(error.code == -999) {  // re-request interrupted async loads - fix for issue #4
@@ -90,6 +112,12 @@
                                            });
                                            return;
                                        } // otherwise, open an image error alert, if one is not already visible
+                                       // Also, clear the request flag and the ref to the temp image view - we can request again
+                                       __strong __typeof(weakSelf) strongSelf = weakSelf;
+                                       dispatch_sync(strongSelf.requestTrackingQueue, ^() {
+                                           [strongSelf setTempImageView:nil];
+                                           [strongSelf setRequestInProgress:NO];
+                                       });
                                        WVAlertsManager *alertsManager = [(WVAppDelegate *)([[UIApplication sharedApplication] delegate]) alertsMgr];
                                        __weak WVAlertsManager *weakAlertsManager = alertsManager;
                                        [alertsManager imageAlertIfNoneVisible:@"Image load error"

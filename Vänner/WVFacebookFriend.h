@@ -17,7 +17,12 @@
 @property (strong, nonatomic) NSString *pictureURLString;
 @property (strong, nonatomic) NSURLRequest *pictureRequest;
 
+// Temporary image view to use for caching images with AFNetworking
 @property (strong, nonatomic) UIImageView *tempImageView;
+
+// Track if an image caching request is in progress
+@property (strong, nonatomic) dispatch_queue_t requestTrackingQueue;
+@property (nonatomic) BOOL requestInProgress;
 
 /* newCopyOfFriend:
  Returns:  A new WVFacebookFriend object with new copies of the strings from

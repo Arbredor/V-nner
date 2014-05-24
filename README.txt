@@ -2,7 +2,7 @@
 README_Vanner.txt for Vänner iPhone app
 
 Edit details follow the challenge description.
-Last edit:     Friday, 23 May 2014
+Last edit:     Saturday, 24 May 2014
 First commit:  Monday, 28 April 2014
 
 ---------------------------------------------
@@ -47,6 +47,9 @@ App notes:
 
 Updates:
 -------
+Edited:  Saturday, 24 May 2014
+• Likely because of multiple identical image requests, a race condition with the AFNetworking UIImageView request callbacks sometimes causes nil references in AFNetworking blocks to skip replacements of placeholder images.  The WVFacebookFriend objects now allow only one outstanding image request.  Eventual success or failure (without automatic resubmission) will clear the request flag.  If the success/failure callbacks are always called, the request flag should not be stuck as YES.  Version updated to 1.07.
+
 Edited:  Friday, 23 May 2014
 • Updated AFNetworking pod from 2.2.3 to 2.2.4, to take advantage of a recent AFNetworking fix for a race condition in its UIImageView extensions.
 
