@@ -60,7 +60,7 @@ static NSString * const WVconst_reauthParam = @"&auth_type=reauthenticate";
 // String constants to generate FB Graph API request URL
 static NSString * const WVconst_initialGraphFriendsRequestURL = @"https://graph.facebook.com/me/friends";
 static NSString * const WVconst_accessTokenString = @"?access_token=";
-static NSString * const WVconst_fieldsString = @"&fields=id,name,picture.width(50).height(50)";
+static NSString * const WVconst_fieldsString = @"&fields=id,name,picture.width(64).height(64)";
 
 // String constants for keys into FB Graph API return dictionary
 static NSString * const WVconst_fbgraph_topErrorKey = @"error";
@@ -96,6 +96,6 @@ static NSString * const WVconst_cookieDomainFacebook = @"facebook.com";
 // --- Constants used in WVFacebookFriend ---
 
 // Name of file for friend placeholder image
-static NSString * const WVconst_placeholderImageFile = @"placeholder.png";
+static NSString * const WVconst_placeholderImageFile = @"placeholder32x32";
 
 #endif
